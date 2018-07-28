@@ -9,10 +9,12 @@ matplotlib = "*"
 seaborn = "*"
 sklearn = "*"
 gensim = "*"
+"bs4" = "*"
 
 [dev-packages]
 "pep8" = "*"
 pylint = "*"
+rope = "*"
 
 [requires]
 python_version = "3.6"

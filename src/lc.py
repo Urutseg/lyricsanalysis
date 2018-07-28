@@ -1,12 +1,19 @@
+import re
+
 import matplotlib.pyplot as plt
 import pandas as pd
+import requests
 import seaborn as sns
+from bs4 import BeautifulSoup
 from gensim.parsing import remove_stopwords
 from gensim.utils import tokenize
-from sklearn.feature_extraction.text import CountVectorizer, ENGLISH_STOP_WORDS
+from sklearn.feature_extraction.text import ENGLISH_STOP_WORDS, CountVectorizer
+
 from src.custom_stop_words import csw
 
+
 class LyricsCharter(object):
+    """Class that hadles lyrics analysis for previously downloaded file"""
     def __init__(self, lyrics_file, artist_name):
         df = pd.read_json(lyrics_file)
         df.rename(columns={"name": "album"}, inplace=True)
@@ -130,3 +137,82 @@ class LyricsCharter(object):
 
         fig = plt.figure(figsize=(15, 10))
         sns.heatmap(top10_df.T, square=True, cmap="YlGnBu", cbar_kws={"orientation":"horizontal"})
+
+
+class LyricsDownloader(object):
+    """Class that downloads and saves artist's lyrics from metrolyrics.com to the file"""
+    def __init__(self, artist_url, artist_name):
+        self.artist_url = artist_url
+        self.artist_name = artist_name
+
+    def process_artist(self):
+        lst = []
+        print("Processing {0}".format(self.artist_url))
+        a, n = self.process_artist_page(self.artist_url)
+        while True:
+            print("Processing {n}".format(n=n))
+            l = [self.parse_album(album) for album in a]
+            lst.extend(l)
+            a, n = self.process_artist_page(n)
+            if not n:
+                break
+        all_songs = pd.concat([pd.DataFrame(l) for l in lst])
+        return all_songs
+
+    def process_artist_page(self, url):
+        r = requests.get(url)
+        soup = BeautifulSoup(r.content, "html.parser")
+        albums = soup.findAll("div", attrs={"class": re.compile(r"album-track-list module clearfix.*")})
+        pagination = soup.find("p", "pagination")
+        next_page_url = pagination.find("a", "button next")
+        if next_page_url:
+            next_page_url = next_page_url["href"]
+        return albums, next_page_url
+
+    def parse_album(self, album_soup):
+        album = {}
+        li = album_soup.findAll("li")
+        album_name_year = album_soup.find("div", "grid_6 omega").header.h3.contents
+        if len(album_name_year) == 2:
+            album_name = album_name_year[0].contents[0]
+            year = album_name_year[1].strip()
+        else:
+            album_name = album_name_year[0].contents[0]
+            year = None
+        lyrics_urls = [l.a["href"] for l in li]
+        album["name"] = album_name
+        album["year"] = year
+        album["song_urls"] = lyrics_urls
+        return album
+
+    def download_lyrics(self, all_songs):
+        song_urls = all_songs.song_urls.unique()
+        url_df = pd.DataFrame(song_urls, columns=["URL"])
+        get_song_text = self.get_song_text
+        a = url_df["URL"].apply(self.get_song_text)
+        df_a = pd.DataFrame(a.values.tolist(), columns=["song","lyrics"])
+        songs_df = pd.concat([url_df, df_a], axis=1)
+        return songs_df        
+
+    def get_song_text(self, url):
+        print("Getting lyrics for {url}".format(url=url))
+        r = requests.get(url)
+        soup = BeautifulSoup(r.content, "html.parser")
+        h = soup.find("div", "banner-heading")
+        song_name = h.h1.get_text()
+        t = soup.findAll("p", "verse")
+        text = "\n".join([i.getText() for i in t])
+        return song_name, text
+
+    def combine_artist_songs(self, all_songs, songs_df):
+        artist_songs = all_songs.merge(songs_df, left_on="song_urls", right_on="URL")
+        artist_songs.drop("song_urls", inplace=True, axis=1)
+        artist_songs.drop_duplicates(inplace=True)
+        artist_songs["year"] = artist_songs["year"].str.strip("()")
+        return artist_songs        
+
+    def songs_to_json(self, output_json):
+        artist_df = self.process_artist()
+        songs_df = self.download_lyrics(artist_df)
+        combined_df = self.combine_artist_songs(artist_df, songs_df)
+        combined_df.to_json(output_json)
