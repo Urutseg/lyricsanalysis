@@ -115,7 +115,7 @@ class LyricsCharter(object):
         top10_df.sort_values(by="sum", ascending=False, inplace=True)
         top10_df.drop("sum", axis=1, inplace=True)
 
-        fig = plt.figure(figsize=(10, 7))
+        fig = plt.figure(figsize=(15, 10))
         sns.heatmap(top10_df.T, square=True, cmap="YlGnBu", cbar_kws={"orientation":"horizontal"})
 
 
@@ -169,7 +169,7 @@ class LyricsDownloader(object):
         song_urls = all_songs.song_urls.unique()
         url_df = pd.DataFrame(song_urls, columns=["URL"])
         get_song_text = self.get_song_text
-        a = url_df["URL"].apply(self.get_song_text)
+        a = url_df["URL"].apply(get_song_text)
         df_a = pd.DataFrame(a.values.tolist(), columns=["song","lyrics"])
         songs_df = pd.concat([url_df, df_a], axis=1)
         return songs_df        
