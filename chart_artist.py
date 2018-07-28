@@ -1,7 +1,8 @@
-from src.lc import LyricsCharter
 import matplotlib.pyplot as plt
 
-nm = LyricsCharter("./data/jsons/nicki-minaj.json","Nicki Minaj")
+from src.lc import LyricsCharter
+
+nm = LyricsCharter("./data/jsons/nicki-minaj.json", "Nicki Minaj")
 
 print(nm.data.head())
 

@@ -10,6 +10,7 @@ seaborn = "*"
 sklearn = "*"
 gensim = "*"
 "bs4" = "*"
+ipykernel = "*"
 
 [dev-packages]
 "pep8" = "*"
