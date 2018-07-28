@@ -103,7 +103,7 @@ class LyricsCharter(object):
             10, "count").sort_values("count")} for y, g in top10_by_year]
         return plot_dfs
 
-    def top_n_words_heatmap(self, n=10, ngrams=(1, 1)):
+    def top_n_words_heatmap(self, n=10, ngrams=(1, 1), by_decade=True):
         df = self.data.copy()
         df.reset_index(drop=True, inplace=True)
         sw = ENGLISH_STOP_WORDS.union(csw)
@@ -122,7 +122,11 @@ class LyricsCharter(object):
         total_words = pd.concat(words_df, axis=1, sort=False)
 
         trans = total_words.T
-        trans["_year"] = df["decade"].fillna(0)
+        if by_decade:
+            trans["_year"] = df["decade"].fillna(0)
+        else:
+            trans["_year"] = df["year"].fillna(0)
+
         trans["_year"] = pd.to_numeric(trans["_year"].fillna(0), downcast="integer")
 
         words_by_year = trans.groupby("_year").sum()
@@ -135,7 +139,7 @@ class LyricsCharter(object):
         top10_df.sort_values(by="sum", ascending=False, inplace=True)
         top10_df.drop("sum", axis=1, inplace=True)
 
-        fig = plt.figure(figsize=(15, 10))
+        fig = plt.figure(figsize=(10, 7))
         sns.heatmap(top10_df.T, square=True, cmap="YlGnBu", cbar_kws={"orientation":"horizontal"})
 
 
