@@ -28,15 +28,19 @@ class LyricsCharter(object):
         df.drop_duplicates(subset="lyrics", keep="first", inplace=True)
         df["song"] = df["song"].str.replace(
             r"(^{0} - )|( Lyrics$)".format(artist_name.title()), "")
-        df["lyrics"] = df["lyrics"].str.replace("won't", "will not")
-        df["lyrics"] = df["lyrics"].str.replace("can't", "can not")
+        df["lyrics"] = df["lyrics"].str.replace(r"(W|w)on't", r"\1ill not")
+        df["lyrics"] = df["lyrics"].str.replace(r"(C|c)an't", r"\1an not")
+        df["lyrics"] = df["lyrics"].str.replace("I ain't", "I am not")
+        df["lyrics"] = df["lyrics"].str.replace(r"(Y|y)ou ain't", r"\1ou are not")
+        df["lyrics"] = df["lyrics"].str.replace(r"(I|i)t ain't", r"\1t is not")
         df["lyrics"] = df["lyrics"].str.replace("n't", " not")
+        df["lyrics"] = df["lyrics"].str.replace("ai not", "is not")
         df["lyrics"] = df["lyrics"].str.replace("'m", " am")
         df["lyrics"] = df["lyrics"].str.replace("'re", " are")
         df["lyrics"] = df["lyrics"].str.replace("'ll", " will")
         df["lyrics"] = df["lyrics"].str.replace("'s", " is")
         df["lyrics"] = df["lyrics"].str.replace("'ve", " have")
-        df["lyrics"] = df["lyrics"].str.replace(r"(\w+\s)\1+", r"\1")
+        df["lyrics"] = df["lyrics"].str.replace(r"(\w+(\s|,))\1+", r"\1")
         df["lyrics"] = df["lyrics"].str.replace(r"(\s\w+)\1+", r"\1")
         self.data = df
         self.data["word_count"] = self.data.lyrics.apply(
