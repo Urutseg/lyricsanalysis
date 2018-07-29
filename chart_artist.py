@@ -8,5 +8,5 @@ print(nm.data.head())
 
 print(nm.data.lyrics[0])
 
-nm.top_n_words_heatmap(by_decade=False)
+nm.top_n_words_heatmap(by_decade=False, ngrams=(2, 2))
 plt.show()
